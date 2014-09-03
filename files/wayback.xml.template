@@ -22,6 +22,11 @@
         wayback.url.host=localhost
         wayback.url.port=8080
         wayback.url.prefix=${wayback.url.scheme}://${wayback.url.host}:${wayback.url.port}
+
+        wayback.proxy.scheme=http
+        wayback.proxy.host=localhost
+        wayback.proxy.port=8090
+        wayback.proxy.prefix=${wayback.proxy.scheme}://${wayback.proxy.host}:${wayback.proxy.port}
       </value>
     </property>
   </bean>
@@ -66,7 +71,7 @@
     get them back on track.
   -->
   <bean name="+" class="org.archive.wayback.webapp.ServerRelativeArchivalRedirect">
-    <property name="matchPort" value="8080" />
+    <property name="matchPort" value="${wayback.url.port}" />
     <property name="useCollection" value="true" />
   </bean>
 
@@ -129,5 +134,42 @@
     </property>
 
   </bean>
+
+<!--
+The following AccessPoint inherits all configuration from the standardaccesspoint
+AccessPoint, but provides a Proxy Replay UI to the same collection. These
+two access points can be used simultaneously on the same Tomcat
+installation.
+Note: using this AccessPoint requires adding a "Connector" on port 8090
+in your Tomcat's server.xml file.
+-->
+    <import resource="ProxyReplay.xml"/>
+    <bean name="proxyaccesspoint" parent="standardaccesspoint">
+        <property name="internalPort" value="${wayback.proxy.port}"/>
+        <property name="serveStatic" value="true" />
+        <property name="bounceToReplayPrefix" value="false" />
+        <property name="bounceToQueryPrefix" value="false" />
+        <property name="refererAuth" value="" />
+        <property name="staticPrefix" value="${wayback.proxy.prefix}/" />
+        <property name="replayPrefix" value="${wayback.proxy.prefix}/" />
+        <property name="queryPrefix" value="${wayback.proxy.prefix}/" />
+        <property name="replay" ref="proxyreplay" />
+        <property name="uriConverter">
+            <bean class="org.archive.wayback.proxy.RedirectResultURIConverter">
+                <property name="redirectURI" value="${wayback.proxy.prefix}/jsp/QueryUI/Redirect.jsp" />
+            </bean>
+        </property>
+        <property name="parser">
+            <bean class="org.archive.wayback.proxy.ProxyRequestParser">
+                <property name="localhostNames">
+                    <list>
+                        <value>localhost</value>
+                    </list>
+                </property>
+                <property name="maxRecords" value="1000" />
+                <property name="addDefaults" value="false" />
+            </bean>
+        </property>
+    </bean>
 
 </beans>

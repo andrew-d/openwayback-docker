@@ -2,6 +2,7 @@
 
 
 LOCAL_PORT ?= 8080
+PROXY_PORT ?= 8090
 
 
 .PHONY: usage
@@ -20,7 +21,10 @@ build: files/wayback.xml files/BDBCollection.xml Dockerfile
 
 .PHONY: run
 run: data_dirs
-	docker run -v `pwd`/data:/data -p 127.0.0.1:$(LOCAL_PORT):8080 wayback
+	docker run -v `pwd`/data:/data \
+		-p 127.0.0.1:$(LOCAL_PORT):8080 \
+		-p 127.0.0.1:$(PROXY_PORT):8090 \
+		wayback
 
 .PHONY: data_dirs
 data_dirs:

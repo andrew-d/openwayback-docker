@@ -56,9 +56,12 @@ RUN curl -# -O http://search.maven.org/remotecontent?filepath=org/netpreserve/op
     unzip -qq openwayback/openwayback*.war -d ${CATALINA_HOME}/webapps/ROOT/ && \
     rm -r openwayback*
 
-# Add config files
-ADD files/wayback.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/wayback.xml
+# Add various config files
 ADD files/BDBCollection.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/BDBCollection.xml
+ADD files/ProxyReplay.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/ProxyReplay.xml
+ADD files/server.xml ${CATALINA_HOME}/conf/server.xml
+ADD files/wayback.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/wayback.xml
 
-# Expose the Tomcat port
+# Expose the Tomcat (web) port and the proxy port
 EXPOSE 8080
+EXPOSE 8090
