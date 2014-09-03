@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"
+       default-init-method="init">
+
+<!--
+    Macro-like substitutions for the overall file:
+      wayback.basedir: default top level directory for all index, state,
+                         locationdb storage.
+-->
+
+  <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="properties">
+      <value>
+        wayback.basedir=/data/indexes/
+
+        <!-- wayback.archivedir.1=${wayback.basedir}/files1/ -->
+
+        wayback.url.scheme=http
+        wayback.url.host=localhost
+        wayback.url.port=8080
+        wayback.url.prefix=${wayback.url.scheme}://${wayback.url.host}:${wayback.url.port}
+      </value>
+    </property>
+  </bean>
+
+  <bean id="waybackCanonicalizer" class="org.archive.wayback.util.url.AggressiveUrlCanonicalizer" />
+
+
+<!--
+    The ResourceFileLocationDB implementation to use for mapping ARC/WARC names
+    to absolute paths/URLs via a BDBJE database.
+-->
+  <bean id="resourcefilelocationdb" class="org.archive.wayback.resourcestore.locationdb.BDBResourceFileLocationDB">
+    <property name="bdbPath" value="${wayback.basedir}/file-db/db/" />
+    <property name="bdbName" value="DB1" />
+    <property name="logPath" value="${wayback.basedir}/file-db/db.log" />
+  </bean>
+
+<!--
+    The XML files indicated in the following import tags contain alternate
+    example implementations of WaybackCollections. To specify where your
+    ARC/WARC files are located, see the file BDBCollection.xml.
+-->
+
+  <import resource="BDBCollection.xml"/>
+
+<!--
+    This is the only AccessPoint defined by default within this wayback.xml
+    Spring configuration file, providing an ArchivalURL Replay UI to the
+    "localbdbcollection", defined in "BDBCollection.xml" by providing
+    ArchivalURL-specific implementations of the replay, parser, and
+    uriConverter.
+
+    This AccessPoint currently will provide access only from the machine
+    running Tomcat. To provide external access, replace "localhost"
+    with your fully qualified hostname of the computer running Tomcat.
+-->
+  <import resource="ArchivalUrlReplay.xml"/>
+
+  <!--
+    Last ditch attempt to resolve server-relative URLs (/page1.htm) that were
+    not successfully rewritten, resolving them against the referring URL to
+    get them back on track.
+  -->
+  <bean name="+" class="org.archive.wayback.webapp.ServerRelativeArchivalRedirect">
+    <property name="matchPort" value="8080" />
+    <property name="useCollection" value="true" />
+  </bean>
+
+  <bean name="standardaccesspoint" class="org.archive.wayback.webapp.AccessPoint">
+    <property name="accessPointPath" value="${wayback.url.prefix}/wayback/"/>
+    <property name="internalPort" value="${wayback.url.port}"/>
+    <property name="serveStatic" value="true" />
+    <property name="bounceToReplayPrefix" value="false" />
+    <property name="bounceToQueryPrefix" value="false" />
+
+    <!--
+      These properties enable customized handling of query, replay, and static
+      requests by different URL prefixes
+    -->
+
+    <property name="replayPrefix" value="${wayback.url.prefix}/wayback/" />
+    <property name="queryPrefix" value="${wayback.url.prefix}/wayback/" />
+    <property name="staticPrefix" value="${wayback.url.prefix}/wayback/" />
+
+    <!--
+        The following property will cause only results matching the exact host
+        the user requested to be displayed. URLs matching other versions of the
+        same host will be stored in the closeMatches list of the SearchResults,
+        and can be displayed by query .jsp files.
+    -->
+    <!--
+    <property name="exactHostMatch" value="true" />
+    -->
+
+    <property name="collection" ref="localbdbcollection" />
+<!--
+    <property name="collection" ref="localcdxcollection" />
+-->
+
+    <property name="replay" ref="archivalurlreplay" />
+    <property name="query">
+      <bean class="org.archive.wayback.query.Renderer">
+        <property name="captureJsp" value="/WEB-INF/query/CalendarResults.jsp" />
+<!--
+        This .jsp provides a "search engine" style listing of results vertically
+        <property name="captureJsp" value="/WEB-INF/query/HTMLCaptureResults.jsp" />
+-->
+      </bean>
+    </property>
+
+    <property name="uriConverter">
+      <bean class="org.archive.wayback.archivalurl.ArchivalUrlResultURIConverter">
+        <property name="replayURIPrefix" value="${wayback.url.prefix}/wayback/"/>
+      </bean>
+    </property>
+
+    <property name="parser">
+      <bean class="org.archive.wayback.archivalurl.ArchivalUrlRequestParser">
+        <property name="maxRecords" value="10000" />
+        <!--
+        <property name="earliestTimestamp" value="1999" />
+        <property name="latestTimestamp" value="2004" />
+        -->
+      </bean>
+    </property>
+
+  </bean>
+
+</beans>
