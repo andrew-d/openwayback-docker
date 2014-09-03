@@ -41,6 +41,11 @@ RUN cd / && \
 # Remove all old webapps
 RUN rm -rf ${CATALINA_HOME}/webapps/*
 
+# Add service file
+RUN mkdir -p /etc/service/tomcat
+ADD files/tomcat_run.sh /etc/service/tomcat/run
+RUN chmod +x /etc/service/tomcat/run
+
 # Configuration for OpenWayback
 ENV OPENWAYBACK_VERSION 2.0.0.BETA.2
 
@@ -54,11 +59,6 @@ RUN curl -# -O http://search.maven.org/remotecontent?filepath=org/netpreserve/op
 # Add config files
 ADD files/wayback.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/wayback.xml
 ADD files/BDBCollection.xml ${CATALINA_HOME}/webapps/ROOT/WEB-INF/BDBCollection.xml
-
-# Add service file
-RUN mkdir -p /etc/service/tomcat
-ADD files/tomcat_run.sh /etc/service/tomcat/run
-RUN chmod +x /etc/service/tomcat/run
 
 # Expose the Tomcat port
 EXPOSE 8080
